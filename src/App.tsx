@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Settings, X, Home, BarChart3, FileText } from 'lucide-react';
-import { signOut } from 'firebase/auth';
+import { User, LogOut, Settings, X, Home, BarChart3, FileText, Check } from 'lucide-react';
+import { signOut, updateProfile } from 'firebase/auth';
 import { auth } from './services/firebase';
 import { useAuth } from './hooks/useAuth';
 import { AuthModal } from '../components/AuthModal';
@@ -18,7 +18,7 @@ import { VoteChart } from '../components/VoteChart';
 import { Vote, VoteType, Subject } from './types';
 import { translations, LanguageCode } from '../utils/translations';
 import { db } from './services/firebase';
-import { collection, addDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 
 const App: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -33,7 +33,12 @@ const App: React.FC = () => {
     const [activeSection, setActiveSection] = useState<'dashboard' | 'votes' | 'profile' | 'content'>('dashboard');
     const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
     const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-  const [language] = useState<LanguageCode>(() => (localStorage.getItem('language') || 'it') as LanguageCode);
+   const [language] = useState<LanguageCode>(() => (localStorage.getItem('language') || 'it') as LanguageCode);
+   const [settingsName, setSettingsName] = useState('');
+   const [settingsSurname, setSettingsSurname] = useState('');
+   const [settingsChatPreference, setSettingsChatPreference] = useState('');
+   const [settingsApiKey, setSettingsApiKey] = useState('');
+   const [displayName, setDisplayName] = useState(user?.displayName || '');
 
   const t = translations[language];
 
@@ -47,25 +52,49 @@ const App: React.FC = () => {
      localStorage.setItem('language', language);
    }, [language]);
 
-   useEffect(() => {
-     if (user) {
-       const votesCollectionRef = collection(db, "users", user.uid, "votes");
-       const q = query(votesCollectionRef, orderBy("date", "desc"));
+    useEffect(() => {
+      if (user) {
+        const votesCollectionRef = collection(db, "users", user.uid, "votes");
+        const q = query(votesCollectionRef, orderBy("date", "desc"));
 
-       const unsubscribe = onSnapshot(q, (snapshot) => {
-         const fetchedVotes: Vote[] = snapshot.docs.map(doc => ({
-           id: doc.id,
-           ...doc.data() as Omit<Vote, 'id' | 'date'>,
-           date: doc.data().date?.toDate().toISOString() || new Date().toISOString()
-         }));
-         setVotes(fetchedVotes);
-       });
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const fetchedVotes: Vote[] = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data() as Omit<Vote, 'id' | 'date'>,
+            date: doc.data().date?.toDate().toISOString() || new Date().toISOString()
+          }));
+          setVotes(fetchedVotes);
+        });
 
-       return () => unsubscribe();
-     } else {
-       setVotes([]);
-     }
-   }, [user]);
+        return () => unsubscribe();
+      } else {
+        setVotes([]);
+      }
+    }, [user]);
+
+    useEffect(() => {
+      if (user) {
+        const fetchSettings = async () => {
+          const docRef = doc(db, 'users', user.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setSettingsName(data.name || '');
+            setSettingsSurname(data.surname || '');
+            setSettingsChatPreference(data.chatPreference || '');
+            setSettingsApiKey(data.apiKey || '');
+            setDisplayName(data.displayName || user?.displayName || '');
+          }
+          // Auto-fill name and surname from Google account
+          if (user.displayName) {
+            const [first, ...rest] = user.displayName.split(' ');
+            setSettingsName(first);
+            setSettingsSurname(rest.join(' '));
+          }
+        };
+        fetchSettings();
+      }
+    }, [user]);
 
    
 
@@ -147,6 +176,23 @@ const App: React.FC = () => {
     }
   };
 
+  const saveSettings = async () => {
+    if (user) {
+      await setDoc(doc(db, 'users', user.uid), {
+        name: settingsName,
+        surname: settingsSurname,
+        chatPreference: settingsChatPreference,
+        apiKey: settingsApiKey,
+        displayName: displayName
+      }, { merge: true });
+      if (displayName !== user.displayName) {
+        await updateProfile(user, { displayName: displayName });
+      }
+      setIsSettingsOpen(false);
+      setIsProfileOpen(false);
+    }
+  };
+
 
 
   if (isLoading) {
@@ -213,38 +259,95 @@ const App: React.FC = () => {
       {isSettingsOpen && (
         <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && setIsSettingsOpen(false)}>
           <div className="modal-content" style={{ maxWidth: '500px', width: '90%', maxHeight: '80vh', overflow: 'auto', padding: '1.5rem' }}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold flex items-center gap-2">
-                <Settings size={20} />
-                Impostazioni
-              </h2>
-              <button onClick={() => setIsSettingsOpen(false)} className="btn btn-icon btn-secondary">
-                <X size={16} />
-              </button>
-            </div>
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <Settings size={20} />
+          Impostazioni
+        </h2>
+      </div>
 
-            <div className="flex flex-col gap-6">
-              {/* Theme Settings */}
-              <div className="form-group">
-                <label className="form-label">Tema</label>
-                <div className="flex gap-2">
+      <div className="flex flex-col gap-6">
+        {/* Theme Settings */}
+        <div className="form-group">
+          <h3 className="text-lg font-semibold mb-4">Tema</h3>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setTheme('light')}
+              className={`btn btn-medium flex-1 ${theme === 'light' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ borderWidth: theme === 'light' ? '2px' : '1px' }}
+            >
+              Chiaro
+            </button>
+            <button
+              onClick={() => setTheme('dark')}
+              className={`btn btn-medium flex-1 ${theme === 'dark' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ borderWidth: theme === 'dark' ? '2px' : '1px' }}
+            >
+              Scuro
+            </button>
+          </div>
+        </div>
+
+        {/* Will Settings */}
+        <div className="form-group">
+          <h3 className="text-lg font-semibold mb-4">Impostazioni Will</h3>
+          <div className="flex flex-col gap-4">
+            <div className="form-group">
+              <h4 className="text-md font-medium mb-2">Nome</h4>
+              <input
+                type="text"
+                value={settingsName}
+                onChange={(e) => setSettingsName(e.target.value)}
+                className="form-input"
+              />
+            </div>
+            <div className="form-group">
+              <h4 className="text-md font-medium mb-2">Cognome</h4>
+              <input
+                type="text"
+                value={settingsSurname}
+                onChange={(e) => setSettingsSurname(e.target.value)}
+                className="form-input"
+              />
+            </div>
+            <div className="form-group">
+              <h4 className="text-md font-medium mb-2">Come vuoi chattare</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: 'incoraggiante', label: 'Incoraggiante' },
+                  { value: 'genz', label: 'Gen Z' },
+                  { value: 'scherzoso', label: 'Scherzoso' },
+                  { value: 'pragmatico', label: 'Pragmatico' }
+                ].map((option) => (
                   <button
-                    onClick={() => setTheme('light')}
-                    className={`btn btn-medium flex-1 ${theme === 'light' ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ borderWidth: theme === 'light' ? '2px' : '1px' }}
+                    key={option.value}
+                    onClick={() => setSettingsChatPreference(settingsChatPreference === option.value ? '' : option.value)}
+                    className={`btn btn-medium ${settingsChatPreference === option.value ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ borderWidth: settingsChatPreference === option.value ? '2px' : '1px' }}
                   >
-                    Chiaro
+                    {option.label}
                   </button>
-                  <button
-                    onClick={() => setTheme('dark')}
-                    className={`btn btn-medium flex-1 ${theme === 'dark' ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ borderWidth: theme === 'dark' ? '2px' : '1px' }}
-                  >
-                    Scuro
-                  </button>
-                </div>
+                ))}
               </div>
             </div>
+            <div className="form-group">
+              <h4 className="text-md font-medium mb-2">Openrouter API Key</h4>
+              <input
+                type="text"
+                value={settingsApiKey}
+                onChange={(e) => setSettingsApiKey(e.target.value)}
+                placeholder="sk-or-v1-..."
+                className="form-input"
+              />
+            </div>
+          </div>
+        </div>
+
+        <button onClick={saveSettings} className="btn btn-primary btn-medium flex items-center justify-center gap-2">
+          <Check size={16} />
+          Salva Impostazioni
+        </button>
+      </div>
           </div>
         </div>
       )}
@@ -252,16 +355,26 @@ const App: React.FC = () => {
       {isProfileOpen && (
         <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && setIsProfileOpen(false)}>
           <div className="modal-content" style={{ maxWidth: '500px', width: '90%', maxHeight: '80vh', overflow: 'auto', padding: '1.5rem' }}>
-            <div className="flex justify-between items-center mb-6">
+            <div className="mb-6">
               <h2 className="text-xl font-semibold flex items-center gap-2">
                 <User size={20} />
                 {t.profile}
               </h2>
-              <button onClick={() => setIsProfileOpen(false)} className="btn btn-icon btn-secondary">
-                <X size={16} />
+            </div>
+            <div className="flex flex-col gap-6">
+              <ProfileSection user={user} displayName={displayName} setDisplayName={setDisplayName} />
+              <div className="card">
+                <h4 className="card-subtitle mb-2">Informazioni account</h4>
+                <div className="text-sm">
+                  <p className="my-1"><strong>Email:</strong> {user?.email}</p>
+                  <p className="my-1"><strong>Account:</strong> Doot Inc.</p>
+                </div>
+              </div>
+              <button onClick={saveSettings} className="btn btn-primary btn-medium flex items-center justify-center gap-2 w-full">
+                <Check size={16} />
+                Salva impostazioni
               </button>
             </div>
-            <ProfileSection user={user} />
           </div>
         </div>
       )}

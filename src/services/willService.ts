@@ -14,7 +14,7 @@ export interface Vote {
   date: string;
 }
 
-export async function* askWill(question: string, votes: Vote[], topicId?: string): AsyncGenerator<string, void, undefined> {
+export async function* askWill(question: string, votes: Vote[], topicId?: string, apiKey?: string, preferences?: { name?: string; surname?: string; chatPreference?: string }): AsyncGenerator<string, void, undefined> {
   const votesContext = votes.length > 0
     ? `Here are the user's current votes:\n${votes.map(v => `- ${v.type}: ${v.value} (weight: ${v.weight}, included: ${v.includeInAverage})`).join('\n')}\n\n`
     : 'The user has no votes recorded yet.\n\n';
@@ -39,7 +39,19 @@ export async function* askWill(question: string, votes: Vote[], topicId?: string
     }
   }
 
-  const prompt = `${votesContext}${universalContext}${topicContext}Answer the user's question about their grades, study topics, or any study-related questions. Be friendly, encouraging, and provide specific, actionable advice. Keep responses concise but helpful.
+  let preferenceInstructions = '';
+  if (preferences?.chatPreference) {
+    const prefMap: { [key: string]: string } = {
+      'incoraggiante': 'Usa un tono incoraggiante.',
+      'genz': 'Parla come un membro della Gen Z.',
+      'scherzoso': 'Fai lo sciocco e il giocherellone.',
+      'pragmatico': 'Sii soprattutto pratico.',
+      'empatico': 'Sii empatico e comprensivo nelle tue risposte.'
+    };
+    preferenceInstructions = prefMap[preferences.chatPreference] || '';
+  }
+
+  const prompt = `${votesContext}${universalContext}${topicContext}${preferenceInstructions ? `Inoltre, ${preferenceInstructions} ` : ''}Answer the user's question about their grades, study topics, or any study-related questions. Be friendly, encouraging, and provide specific, actionable advice. Keep responses concise but helpful.
 
 Question: ${question}`;
 
@@ -48,7 +60,7 @@ Question: ${question}`;
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Authorization': `Bearer ${apiKey ? apiKey : OPENROUTER_API_KEY}`,
       },
       body: JSON.stringify({
         model: MODEL,
@@ -60,7 +72,7 @@ Question: ${question}`;
     if (!response.ok) {
       const errorText = await response.text();
       console.error('OpenRouter API Error:', errorText);
-      throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+      throw new Error(`API request failed with status ${response.status}`);
     }
 
     const reader = response.body?.getReader();
@@ -102,6 +114,6 @@ Question: ${question}`;
   } catch (error) {
     console.error('Error streaming from OpenRouter:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-    yield `Sorry, I couldn't process your request right now. ${errorMessage}`;
+     yield `Si è riscontrato un errore. ${errorMessage}`;
   }
 }
