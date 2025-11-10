@@ -523,6 +523,9 @@ const App: React.FC = () => {
                 <div className="mt-8">
                   <div className="card">
                     <h3 className="card-title">Argomenti recenti</h3>
+                    <div className="cursor-pointer p-4 border border-border rounded-lg hover:bg-surface transition-colors mb-2" onClick={() => navigateToTopic('Storia', 'storia-assolutismo-rivoluzioni')}>
+                      <span>Assolutismo, Rivoluzioni e Nuove Potenze Europee</span>
+                    </div>
                     <div className="cursor-pointer p-4 border border-border rounded-lg hover:bg-surface transition-colors" onClick={() => navigateToTopic('Filosofia', 'filosofia-ellenistica')}>
                       <span>Filosofia ellenistica: epicureismo, stoicismo, scetticismo</span>
                     </div>
