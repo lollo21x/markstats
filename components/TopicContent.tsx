@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { ArrowLeft, FileText, ExternalLink } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, FileText, ExternalLink, X } from 'lucide-react';
 import { WillChat } from './WillChat';
 import { Vote } from '../src/types';
 import { contentData, getRelativeDate } from '../src/contentData';
@@ -81,6 +81,8 @@ const VideoPlayer: React.FC<{ src: string }> = ({ src }) => {
 };
 
 export const TopicContent: React.FC<TopicContentProps> = ({ topicId, onBack, votes }) => {
+  const [showAdditionalVideos, setShowAdditionalVideos] = useState(false);
+
   // Find the topic
   let topic: any = null;
   for (const subj of contentData) {
@@ -117,6 +119,43 @@ export const TopicContent: React.FC<TopicContentProps> = ({ topicId, onBack, vot
         <div className="card mb-6">
           <h3 className="card-title">Video</h3>
           <VideoPlayer src={topic.videoUrl} />
+          {topic.additionalVideos && topic.additionalVideos.length > 0 && (
+            <div style={{ marginTop: '1rem' }}>
+              <button
+                onClick={() => setShowAdditionalVideos(true)}
+                className="btn btn-secondary btn-medium"
+                style={{ width: '100%' }}
+              >
+                Altri video
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Additional Videos Modal */}
+      {showAdditionalVideos && topic.additionalVideos && topic.additionalVideos.length > 0 && (
+        <div className="modal-backdrop" onClick={() => setShowAdditionalVideos(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ padding: '1.5rem', position: 'relative' }}>
+              <button
+                onClick={() => setShowAdditionalVideos(false)}
+                className="btn btn-icon btn-secondary"
+                style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 1 }}
+              >
+                <X size={16} />
+              </button>
+              <h3 className="card-title" style={{ marginBottom: '1.5rem', paddingRight: '3rem' }}>Altri video</h3>
+              <div className="flex flex-col gap-6">
+                {topic.additionalVideos.map((video: { title: string; url: string }, index: number) => (
+                  <div key={index} className="card">
+                    <h4 className="card-title" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>{video.title}</h4>
+                    <VideoPlayer src={video.url} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
