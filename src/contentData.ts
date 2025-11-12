@@ -26,7 +26,7 @@ export const contentData: SubjectContent[] = [
         videoUrl: 'https://res.cloudinary.com/dpijllwgu/video/upload/v1762799433/L_Europa_Rifatta_ufkzqd.mp4',
         additionalVideos: [
           { title: "Guerra dei trent'anni", url: 'https://res.cloudinary.com/dpijllwgu/video/upload/v1762882160/guerra_dei_trent_anni_egdjgs.mp4' },
-          { title: "L'Inghilterra da Giacomo I alla monarchia costitiuzionale", url: 'https://res.cloudinary.com/dpijllwgu/video/upload/v1762971675/rivoluzione_inglese_fezopn.mp4' },
+          { title: "L'Inghilterra da Giacomo I alla monarchia costituzionale", url: 'https://res.cloudinary.com/dpijllwgu/video/upload/v1762971675/rivoluzione_inglese_fezopn.mp4' },
           { title: 'La Francia: assolutismo, Richelieu, Mazzarino', url: 'https://res.cloudinary.com/dpijllwgu/video/upload/v1762963134/assolutismo_francia_i0uczg.mp4' },
           { title: 'Illuminismo e despotismo illuminato', url: 'https://res.cloudinary.com/dpijllwgu/video/upload/v1762963146/illuminismo_despotismo_illuminato_ncoqdd.mp4' }
         ],
