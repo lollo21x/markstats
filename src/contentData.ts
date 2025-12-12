@@ -233,7 +233,7 @@ Ruolo nella società | Impegno cosmopolita fondato sulla legge naturale | Ritiro
         files: [
           { name: 'mappamentale.png', url: 'https://res.cloudinary.com/dpijllwgu/image/upload/v1765554769/NotebookLM_Mind_Map_5_md5lno.png' }
         ],
-        testDate: '2025-11-20',
+        testDate: '2025-12-13',
         initialMessage: "Ciao! Sono Will, il tuo assistente di studio. Posso aiutarti a capire meglio la nascita della filosofia cristiana. Da cosa iniziamo? Vuoi saperne di più su Agostino o su Tommaso?",
         context: `Fede e Ragione nel Pensiero Cristiano: Un'Analisi Comparata tra Agostino d'Ippona e Tommaso d'Aquino
 Introduzione: La Tensione Millenaria tra Fede e Ragione
