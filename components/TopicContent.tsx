@@ -90,9 +90,21 @@ export const TopicContent: React.FC<TopicContentProps> = ({ topicId, onBack, vot
     if (topic) break;
   }
 
+  const [showShareToast, setShowShareToast] = useState(false);
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setShowShareToast(true);
+      setTimeout(() => setShowShareToast(false), 3000);
+    } catch (err) {
+      console.error('Failed to copy!', err);
+    }
+  };
+
   if (!topic) {
     return (
-      <div>
+      <div className="animate-fade-in">
         <button onClick={onBack} className="btn btn-icon btn-secondary mb-4">
           <ArrowLeft size={16} />
         </button>
@@ -102,16 +114,30 @@ export const TopicContent: React.FC<TopicContentProps> = ({ topicId, onBack, vot
   }
 
   return (
-    <div>
-      <div className="flex items-center gap-4 mb-6">
+    <div className="animate-slide-up">
+      {showShareToast && (
+        <div className="share-toast">
+          Link copiato!
+        </div>
+      )}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onBack}
+            className="btn btn-icon btn-secondary"
+            style={{ borderRadius: '50%', width: '40px', height: '40px' }}
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <h2 className="text-xl font-semibold">{topic.title}</h2>
+        </div>
         <button
-          onClick={onBack}
-          className="btn btn-icon btn-secondary"
-          style={{ borderRadius: '50%', width: '40px', height: '40px' }}
+          onClick={handleShare}
+          className="btn btn-secondary flex items-center gap-2 btn-medium"
         >
-          <ArrowLeft size={16} />
+          <ExternalLink size={16} />
+          <span>Condividi</span>
         </button>
-        <h2 className="text-xl font-semibold">{topic.title}</h2>
       </div>
 
       {/* Video */}
@@ -193,6 +219,18 @@ export const TopicContent: React.FC<TopicContentProps> = ({ topicId, onBack, vot
           </div>
         </div>
       </div>
+
+      {/* Bottom Share Button */}
+      <div className="flex justify-end mt-8 mb-4">
+        <button
+          onClick={handleShare}
+          className="btn btn-secondary flex items-center gap-2 btn-medium"
+        >
+          <ExternalLink size={16} />
+          <span>Condividi questa sezione</span>
+        </button>
+      </div>
+
     </div>
   );
 };
